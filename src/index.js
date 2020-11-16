@@ -1,57 +1,31 @@
 import { debounce } from 'lodash';
-// import fetchCountries from './js/fetchCountries';
-import countryCard from './templates/countryCard.hbs';
-import countriesList from './templates/countriesList.hbs';
+import fetchCountries from './js/fetchCountries';
+import buildMarkup from './js/buildMarkup';
 
 import { error, defaults } from '@pnotify/core';
 import '@pnotify/core/dist/PNotify.css';
 import '@pnotify/core/dist/BrightTheme.css';
 defaults.delay = 2000;
-defaults.closer = true;
 
-const countriesListEl = document.querySelector('#countries-list');
-const inputField = document.querySelector('#country-search');
+const inputField = document.getElementById('countries-search');
+const countriesListEl = document.getElementById('js-countries-markup');
 
-inputField.addEventListener(
-  'input',
-  debounce(() => {
-    const searchQuery = inputField.value.trim();
-    fetchCountries(searchQuery);
-  }, 1000),
-);
+inputField.addEventListener('input', debounce(onSearch, 1000));
 
-function fetchCountries(name) {
-  fetch(`https://restcountries.eu/rest/v2/name/${name}`)
-    .then(result => {
-      if (name == 0) {
-        error({
-          title: 'Ошибка',
-          text: 'Повторите запрос',
-        });
-      }
-      return result.json();
-    })
-    .then(data => markUp(data))
-    .finally(clearResults());
-}
+function onSearch(e) {
+  const searchQuery = e.target.value.trim();
 
-function markUp(countries) {
-  if (countries.length > 10) {
+  if (searchQuery == 0) {
     error({
-      title: 'Слишком длинный список',
-      text: 'Конкретизируйте запрос',
+      title: 'Ошибка',
+      text: 'Повторите запрос',
     });
-  } else if (countries.length >= 2 && countries.length <= 10) {
-    countriesListEl.insertAdjacentHTML('beforeend', countriesList(countries));
-  } else {
-    countriesListEl.insertAdjacentHTML('beforeend', countryCard(countries));
+    return;
   }
-  // else {
-  //   error({
-  //     title: 'Ошибка',
-  //     text: 'Ничего не найдено',
-  //   });
-  // }
+
+  fetchCountries(searchQuery)
+    .then(result => buildMarkup(result))
+    .finally(clearResults());
 }
 
 function clearResults() {
